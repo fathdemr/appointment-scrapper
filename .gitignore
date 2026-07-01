@@ -1,0 +1,9 @@
+.env
+.idea/
+*.exe
+*.log
+/tmp/
+appointment-scrapper
+
+inspect
+config.yaml
