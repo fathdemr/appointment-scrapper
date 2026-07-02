@@ -36,6 +36,21 @@ func (b *Browser) NewContext(parent context.Context) (context.Context, context.C
 	// Container ortamında (Alpine/K8s) CHROME_PATH env var ile binary yolu belirtilir.
 	if p := os.Getenv("CHROME_PATH"); p != "" {
 		opts = append(opts, chromedp.ExecPath(p))
+		// K8s runAsUser override'ında HOME boş/yazılamaz olabilir; crashpad
+		// database yolunu HOME/XDG üzerinden türettiği için Chrome sürecine
+		// yazılabilir bir ev dizini ver.
+		opts = append(opts, chromedp.Env(
+			"HOME=/tmp/chrome-home",
+			"XDG_CONFIG_HOME=/tmp/chrome-home/.config",
+			"XDG_CACHE_HOME=/tmp/chrome-home/.cache",
+		))
+	}
+
+	// spor.istanbul Cloudflare arkasında ve yurt dışı/datacenter IP'lerini
+	// engelliyor — TR çıkışlı bir proxy CHROME_PROXY ile verilebilir.
+	// Format: http://host:port veya socks5://host:port (auth'suz).
+	if proxy := os.Getenv("CHROME_PROXY"); proxy != "" {
+		opts = append(opts, chromedp.ProxyServer(proxy))
 	}
 
 	if b.headless {
@@ -54,11 +69,13 @@ func (b *Browser) NewContext(parent context.Context) (context.Context, context.C
 		chromedp.DisableGPU,
 		chromedp.Flag("disable-software-rasterizer", true),
 
-		// Crashpad subprocess'i tamamen kapat.
-		// "chrome_crashpad_handler: --database is required" bu flagsiz gelir.
-		chromedp.Flag("no-zygote", true),
-		chromedp.Flag("single-process", true), // subprocess açamayan K8s ortamları için kesin çözüm
+		// Crashpad: "--database is required" hatası, Chrome'un crash handler'ı
+		// veritabanı yolu olmadan başlatmasından gelir. Yazılabilir bir dump
+		// dizini vererek çöz; crash raporlamayı da tamamen kapat.
+		chromedp.Flag("crash-dumps-dir", "/tmp/chrome-crash"),
 		chromedp.Flag("disable-crash-reporter", true),
+		chromedp.Flag("disable-breakpad", true),
+		chromedp.Flag("no-zygote", true),
 
 		// Chrome'a yazılabilir bir kullanıcı dizini ver
 		chromedp.Flag("user-data-dir", "/tmp/chrome-user-data"),

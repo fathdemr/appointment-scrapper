@@ -3,6 +3,7 @@ package scraper
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -103,9 +104,25 @@ func (s *Scraper) Run(ctx context.Context) (bool, error) {
 }
 
 func (s *Scraper) login(ctx context.Context) error {
-	return chromedp.Run(ctx,
-		chromedp.Navigate(loginURL),
-		chromedp.WaitVisible(selTCInput, chromedp.ByQuery),
+	// Adımları ayrı zaman aşımlarıyla çalıştır: hangisinin takıldığı
+	// loglardan anlaşılsın ve hata anında browser context'i hâlâ canlı
+	// olsun ki tanılama (screenshot/URL) alınabilsin.
+	navCtx, cancelNav := context.WithTimeout(ctx, 25*time.Second)
+	err := chromedp.Run(navCtx, chromedp.Navigate(loginURL))
+	cancelNav()
+	if err != nil {
+		return fmt.Errorf("giriş sayfası açılamadı — pod'dan siteye ağ erişimini kontrol et: %w", err)
+	}
+
+	waitCtx, cancelWait := context.WithTimeout(ctx, 15*time.Second)
+	err = chromedp.Run(waitCtx, chromedp.WaitVisible(selTCInput, chromedp.ByQuery))
+	cancelWait()
+	if err != nil {
+		s.dumpPageDiagnostics(ctx, "login")
+		return fmt.Errorf("TC kimlik alanı görünmedi (bot koruması / farklı sayfa?): %w", err)
+	}
+
+	if err := chromedp.Run(ctx,
 		chromedp.Clear(selTCInput, chromedp.ByQuery),
 		chromedp.SendKeys(selTCInput, s.creds.TCNo, chromedp.ByQuery),
 		chromedp.Clear(selPwdInput, chromedp.ByQuery),
@@ -113,6 +130,41 @@ func (s *Scraper) login(ctx context.Context) error {
 		chromedp.Click(selLoginBtn, chromedp.ByQuery),
 		chromedp.WaitReady("body", chromedp.ByQuery),
 		chromedp.Sleep(2*time.Second),
+	); err != nil {
+		s.dumpPageDiagnostics(ctx, "login-submit")
+		return fmt.Errorf("giriş formu gönderilemedi: %w", err)
+	}
+	return nil
+}
+
+// dumpPageDiagnostics hata anında sayfanın URL/başlık/içeriğini loglar ve
+// ekran görüntüsünü /tmp altına kaydeder (kubectl cp ile alınabilir).
+func (s *Scraper) dumpPageDiagnostics(ctx context.Context, stage string) {
+	dCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var url, title, snippet string
+	var shot []byte
+	_ = chromedp.Run(dCtx,
+		chromedp.Location(&url),
+		chromedp.Title(&title),
+		chromedp.Evaluate(`document.body ? document.body.innerText.slice(0, 500) : ''`, &snippet),
+		chromedp.CaptureScreenshot(&shot),
+	)
+
+	shotPath := ""
+	if len(shot) > 0 {
+		shotPath = "/tmp/" + stage + "-fail.png"
+		if werr := os.WriteFile(shotPath, shot, 0o644); werr != nil {
+			shotPath = ""
+		}
+	}
+	s.logger.Error("Sayfa tanılaması",
+		zap.String("stage", stage),
+		zap.String("url", url),
+		zap.String("title", title),
+		zap.String("body_snippet", snippet),
+		zap.String("screenshot", shotPath),
 	)
 }
 
