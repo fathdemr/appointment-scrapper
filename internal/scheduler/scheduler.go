@@ -9,13 +9,13 @@ import (
 	"go.uber.org/zap"
 
 	"appointment-scrapper/config"
-	"appointment-scrapper/internal/scraper"
 )
 
-// SlotTarget bir hedef randevu slotunu ve onun açılış zamanını tanımlar.
-type SlotTarget struct {
-	SlotTime time.Time // örn: 04.07.2026 21:00
-	OpensAt  time.Time // SlotTime - opening_offset_hours
+// Runner bir booking denemesi yapabilen herhangi bir yapıyı temsil eder.
+// scraper.Scraper bu arayüzü doğrudan karşılar; service katmanı ek DB
+// güncelleme mantığı için bu arayüzü wrap eder.
+type Runner interface {
+	Run(ctx context.Context) (bool, error)
 }
 
 type Mode string
@@ -37,23 +37,29 @@ type Status struct {
 	NextBurstSlot string    `json:"next_burst_slot,omitempty"`
 }
 
+// SlotTarget bir hedef randevu slotunu ve onun açılış zamanını tanımlar.
+type SlotTarget struct {
+	SlotTime time.Time
+	OpensAt  time.Time
+}
+
 type Scheduler struct {
-	cfg     config.ScraperConfig
-	scraper *scraper.Scraper
-	logger  *zap.Logger
+	cfg    config.ScraperConfig
+	runner Runner
+	logger *zap.Logger
 
 	stopCh chan struct{}
 	mu     sync.Mutex
 	status Status
 }
 
-func New(cfg config.ScraperConfig, sc *scraper.Scraper, logger *zap.Logger) *Scheduler {
+func New(cfg config.ScraperConfig, runner Runner, logger *zap.Logger) *Scheduler {
 	return &Scheduler{
-		cfg:     cfg,
-		scraper: sc,
-		logger:  logger,
-		stopCh:  make(chan struct{}),
-		status:  Status{Mode: ModeIdle},
+		cfg:    cfg,
+		runner: runner,
+		logger: logger,
+		stopCh: make(chan struct{}),
+		status: Status{Mode: ModeIdle},
 	}
 }
 
@@ -67,15 +73,17 @@ func (s *Scheduler) Start() {
 
 	s.logger.Info("Zamanlayıcı başlatıldı",
 		zap.Int("opening_offset_hours", s.cfg.OpeningOffsetHours),
-		zap.Int("burst_before_seconds", s.cfg.BurstBeforeSeconds),
-		zap.Int("burst_after_seconds", s.cfg.BurstAfterSeconds),
 		zap.Strings("target_dates", s.cfg.TargetDates),
 		zap.Strings("desired_times", s.cfg.DesiredTimes),
 	)
 }
 
 func (s *Scheduler) Stop() {
-	close(s.stopCh)
+	select {
+	case <-s.stopCh:
+	default:
+		close(s.stopCh)
+	}
 	s.mu.Lock()
 	s.status.Running = false
 	s.status.Mode = ModeIdle
@@ -151,7 +159,7 @@ func (s *Scheduler) tick(now time.Time) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	found, err := s.scraper.Run(ctx)
+	found, err := s.runner.Run(ctx)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -169,8 +177,6 @@ func (s *Scheduler) tick(now time.Time) {
 	}
 }
 
-// buildTargets config'deki target_dates × desired_times kombinasyonlarından
-// SlotTarget listesi üretir. Geçmiş burst pencereleri dahil edilmez.
 func (s *Scheduler) buildTargets(from time.Time) []SlotTarget {
 	offset := time.Duration(s.cfg.OpeningOffsetHours) * time.Hour
 	burstAfter := time.Duration(s.cfg.BurstAfterSeconds) * time.Second
@@ -182,22 +188,16 @@ func (s *Scheduler) buildTargets(from time.Time) []SlotTarget {
 			s.logger.Warn("Tarih parse edilemedi", zap.String("date", dateStr), zap.Error(err))
 			continue
 		}
-
 		for _, timeStr := range s.cfg.DesiredTimes {
 			slotTime := parseOnDay(date, timeStr)
 			if slotTime.IsZero() {
 				continue
 			}
 			opensAt := slotTime.Add(-offset)
-
-			// Burst penceresi tamamen geçtiyse atla
 			if opensAt.Add(burstAfter).Before(from) {
 				continue
 			}
-			targets = append(targets, SlotTarget{
-				SlotTime: slotTime,
-				OpensAt:  opensAt,
-			})
+			targets = append(targets, SlotTarget{SlotTime: slotTime, OpensAt: opensAt})
 		}
 	}
 	return targets

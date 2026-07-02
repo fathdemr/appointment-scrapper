@@ -1,0 +1,683 @@
+basePath: /api/v1
+definitions:
+  model.BookingJob:
+    properties:
+      browser_timeout_seconds:
+        type: integer
+      burst_after_seconds:
+        type: integer
+      burst_before_seconds:
+        type: integer
+      burst_interval_seconds:
+        type: integer
+      courts:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      desired_times:
+        description: HH:MM
+        items:
+          type: string
+        type: array
+      facilities:
+        items:
+          type: string
+        type: array
+      headless:
+        description: Tarayıcı ayarları
+        type: boolean
+      id:
+        type: string
+      last_result:
+        description: Çalışma durumu
+        type: string
+      last_run_at:
+        type: string
+      name:
+        type: string
+      opening_offset_hours:
+        description: Zamanlayıcı ayarları
+        type: integer
+      password:
+        type: string
+      poll_interval_seconds:
+        type: integer
+      sport_type:
+        description: Rezervasyon parametreleri
+        type: string
+      status:
+        $ref: '#/definitions/model.JobStatus'
+      success_message:
+        type: string
+      target_dates:
+        description: DD.MM.YYYY
+        items:
+          type: string
+        type: array
+      tc_no:
+        description: spor.istanbul giriş bilgileri
+        type: string
+      telegram_bot_token:
+        description: Telegram bildirim
+        type: string
+      telegram_chat_id:
+        type: string
+      total_found:
+        type: integer
+      total_runs:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  model.Court:
+    properties:
+      created_at:
+        type: string
+      facility:
+        $ref: '#/definitions/model.Facility'
+      facility_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      site_value:
+        type: string
+    type: object
+  model.Facility:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      site_value:
+        type: string
+      sport_type:
+        $ref: '#/definitions/model.SportType'
+      sport_type_id:
+        type: string
+    type: object
+  model.JobStatus:
+    enum:
+    - pending
+    - active
+    - running
+    - success
+    - failed
+    - stopped
+    type: string
+    x-enum-varnames:
+    - JobStatusPending
+    - JobStatusActive
+    - JobStatusRunning
+    - JobStatusSuccess
+    - JobStatusFailed
+    - JobStatusStopped
+  model.SportType:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      name:
+        description: görüntülenen ad
+        type: string
+      site_value:
+        description: dropdown value attr
+        type: string
+    type: object
+  service.CreateJobRequest:
+    properties:
+      browser_timeout_seconds:
+        type: integer
+      burst_after_seconds:
+        type: integer
+      burst_before_seconds:
+        type: integer
+      burst_interval_seconds:
+        type: integer
+      courts:
+        items:
+          type: string
+        type: array
+      desired_times:
+        items:
+          type: string
+        type: array
+      facilities:
+        items:
+          type: string
+        type: array
+      headless:
+        type: boolean
+      name:
+        type: string
+      opening_offset_hours:
+        type: integer
+      password:
+        type: string
+      poll_interval_seconds:
+        type: integer
+      sport_type:
+        type: string
+      success_message:
+        type: string
+      target_dates:
+        items:
+          type: string
+        type: array
+      tc_no:
+        type: string
+      telegram_bot_token:
+        type: string
+      telegram_chat_id:
+        type: string
+    required:
+    - desired_times
+    - facilities
+    - name
+    - password
+    - sport_type
+    - target_dates
+    - tc_no
+    type: object
+  service.JobStatusResponse:
+    properties:
+      browser_timeout_seconds:
+        type: integer
+      burst_after_seconds:
+        type: integer
+      burst_before_seconds:
+        type: integer
+      burst_interval_seconds:
+        type: integer
+      courts:
+        items:
+          type: string
+        type: array
+      created_at:
+        type: string
+      desired_times:
+        description: HH:MM
+        items:
+          type: string
+        type: array
+      facilities:
+        items:
+          type: string
+        type: array
+      headless:
+        description: Tarayıcı ayarları
+        type: boolean
+      id:
+        type: string
+      is_running:
+        type: boolean
+      last_result:
+        description: Çalışma durumu
+        type: string
+      last_run_at:
+        type: string
+      name:
+        type: string
+      next_burst_at:
+        type: string
+      next_burst_slot:
+        type: string
+      opening_offset_hours:
+        description: Zamanlayıcı ayarları
+        type: integer
+      password:
+        type: string
+      poll_interval_seconds:
+        type: integer
+      scheduler_mode:
+        type: string
+      sms_waiting:
+        type: boolean
+      sport_type:
+        description: Rezervasyon parametreleri
+        type: string
+      status:
+        $ref: '#/definitions/model.JobStatus'
+      success_message:
+        type: string
+      target_dates:
+        description: DD.MM.YYYY
+        items:
+          type: string
+        type: array
+      tc_no:
+        description: spor.istanbul giriş bilgileri
+        type: string
+      telegram_bot_token:
+        description: Telegram bildirim
+        type: string
+      telegram_chat_id:
+        type: string
+      total_found:
+        type: integer
+      total_runs:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  service.UpdateJobRequest:
+    properties:
+      browser_timeout_seconds:
+        type: integer
+      burst_after_seconds:
+        type: integer
+      burst_before_seconds:
+        type: integer
+      burst_interval_seconds:
+        type: integer
+      courts:
+        items:
+          type: string
+        type: array
+      desired_times:
+        items:
+          type: string
+        type: array
+      facilities:
+        items:
+          type: string
+        type: array
+      headless:
+        type: boolean
+      name:
+        type: string
+      opening_offset_hours:
+        type: integer
+      password:
+        type: string
+      poll_interval_seconds:
+        type: integer
+      sport_type:
+        type: string
+      success_message:
+        type: string
+      target_dates:
+        items:
+          type: string
+        type: array
+      tc_no:
+        type: string
+      telegram_bot_token:
+        type: string
+      telegram_chat_id:
+        type: string
+    required:
+    - desired_times
+    - facilities
+    - name
+    - sport_type
+    - target_dates
+    - tc_no
+    type: object
+host: localhost:5077
+info:
+  contact:
+    email: fath.demmr@gmail.com
+    name: Fatih Demir
+  description: spor.istanbul randevu rezervasyonu otomasyon API'si
+  termsOfService: http://swagger.io/terms/
+  title: Appointment Scrapper API
+  version: "1.0"
+paths:
+  /api/v1/jobs:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.BookingJob'
+            type: array
+      summary: Tüm booking job'larını listele
+      tags:
+      - jobs
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Job yapılandırması
+        in: body
+        name: job
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.BookingJob'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Yeni booking job oluştur
+      tags:
+      - jobs
+  /api/v1/jobs/{id}:
+    delete:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Booking job'ı sil
+      tags:
+      - jobs
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.BookingJob'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Bir booking job'ı getir
+      tags:
+      - jobs
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Güncellenen yapılandırma
+        in: body
+        name: job
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.BookingJob'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Booking job'ı güncelle
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/run:
+    post:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Job'ı hemen çalıştır (manuel tetikleme)
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/sms-reply:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SMS kodu
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: SMS doğrulama kodunu ilet (UI üzerinden)
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/start:
+    post:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Job zamanlayıcısını başlat
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/status:
+    get:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.JobStatusResponse'
+      summary: Job çalışma durumunu getir (DB + anlık zamanlayıcı)
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/stop:
+    post:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Job zamanlayıcısını durdur
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/telegram/verify:
+    post:
+      parameters:
+      - description: Job ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Telegram bot bağlantısını test et
+      tags:
+      - jobs
+  /api/v1/system/status:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Sistem durumu
+      tags:
+      - system
+  /catalog/courts:
+    get:
+      parameters:
+      - description: Facility ID
+        in: query
+        name: facility_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Court'
+            type: array
+      summary: Tesise göre salon/kort listesi
+      tags:
+      - catalog
+  /catalog/facilities:
+    get:
+      parameters:
+      - description: SportType ID
+        in: query
+        name: sport_type_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Facility'
+            type: array
+      summary: Spor tipine göre tesis listesi
+      tags:
+      - catalog
+  /catalog/sport-types:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SportType'
+            type: array
+      summary: Tüm spor dallarını listeler
+      tags:
+      - catalog
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Sağlık kontrolü
+      tags:
+      - system
+  /telegram/detect-chat:
+    get:
+      parameters:
+      - description: Bot token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Son güncellemeye bakarak chat_id'yi döner
+      tags:
+      - telegram
+  /telegram/verify-token:
+    get:
+      parameters:
+      - description: Bot token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: Bot token'ını doğrular, bot adını döner
+      tags:
+      - telegram
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: X-API-Key
+    type: apiKey
+swagger: "2.0"

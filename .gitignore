@@ -4,6 +4,13 @@
 *.log
 /tmp/
 appointment-scrapper
-
 inspect
 config.yaml
+
+# Build artifacts
+dist/
+server
+
+# UI
+ui/node_modules/
+ui/dist/
